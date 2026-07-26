@@ -2,17 +2,86 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --night: #0b111e;
+  --neon: #00d2ff;
+  --neon-dim: #00a8cc;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
 body {
-  background: #0b111e;
+  height: 100%;
+}
+
+body {
+  background: radial-gradient(ellipse at top, #0f172a 0%, #0b111e 60%);
   color: #e0f2fe;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  min-height: 100vh;
 }
 
+/* Glassmorphism */
 .glass {
-  background: rgba(11, 17, 30, 0.75);
+  background: rgba(11, 17, 30, 0.72);
   backdrop-filter: blur(16px);
-  border: 1px solid rgba(0, 210, 255, 0.15);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 210, 255, 0.12);
 }
 
-.neon-blue {
-  box-shadow: 0 0 15px #00d2ff;
+.glass-strong {
+  background: rgba(11, 17, 30, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 210, 255, 0.18);
+}
+
+/* Neon glow */
+.neon-border {
+  box-shadow: 0 0 12px rgba(0, 210, 255, 0.25);
+}
+
+.neon-text {
+  text-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
+}
+
+/* Smooth scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 210, 255, 0.25);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 210, 255, 0.4);
+}
+
+/* Priority badges */
+.priority-high {
+  @apply bg-rose-500/20 text-rose-300 border border-rose-500/30;
+}
+.priority-medium {
+  @apply bg-amber-500/20 text-amber-300 border border-amber-500/30;
+}
+.priority-low {
+  @apply bg-emerald-500/20 text-emerald-300 border border-emerald-500/30;
+}
+
+/* Timer ring animation helper */
+.timer-ring {
+  transition: stroke-dashoffset 0.5s linear;
+}
+
+/* Drag overlay */
+.dragging {
+  opacity: 0.5;
+  transform: scale(1.02);
 }

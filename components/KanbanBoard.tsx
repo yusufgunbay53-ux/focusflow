@@ -1,0 +1,326 @@
+"use client";
+
+import { useState } from "react";
+import {
+  DndContext,
+  DragOverlay,
+  closestCorners,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragStartEvent,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
+  Plus,
+  GripVertical,
+  Trash2,
+  CheckCircle2,
+  Circle,
+  Pencil,
+  X,
+} from "lucide-react";
+import { Task, TaskStatus, Priority, PRIORITY_LABELS, STATUS_LABELS } from "@/lib/types";
+
+interface Props {
+  tasks: Task[];
+  onAdd: (title: string, priority: Priority) => void;
+  onUpdate: (id: string, updates: Partial<Task>) => void;
+  onDelete: (id: string) => void;
+  onMove: (id: string, status: TaskStatus) => void;
+}
+
+const COLUMNS: TaskStatus[] = ["todo", "in_progress", "done"];
+
+function TaskCard({
+  task,
+  onDelete,
+  onUpdate,
+  isOverlay = false,
+}: {
+  task: Task;
+  onDelete?: (id: string) => void;
+  onUpdate?: (id: string, updates: Partial<Task>) => void;
+  isOverlay?: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(task.title);
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: task.id, data: { status: task.status } });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  };
+
+  const priorityClass =
+    task.priority === "high"
+      ? "priority-high"
+      : task.priority === "medium"
+      ? "priority-medium"
+      : "priority-low";
+
+  const saveEdit = () => {
+    if (editTitle.trim() && onUpdate) {
+      onUpdate(task.id, { title: editTitle.trim() });
+    }
+    setEditing(false);
+  };
+
+  return (
+    <div
+      ref={isOverlay ? undefined : setNodeRef}
+      style={isOverlay ? undefined : style}
+      className={`glass rounded-xl p-3 group transition-all duration-200 hover:border-neon/30 ${
+        isOverlay ? "shadow-neon scale-105 rotate-1" : ""
+      }`}
+    >
+      <div className="flex items-start gap-2">
+        {!isOverlay && (
+          <button
+            {...attributes}
+            {...listeners}
+            className="mt-0.5 p-1 rounded text-sky-400/40 hover:text-neon cursor-grab active:cursor-grabbing touch-none"
+          >
+            <GripVertical className="w-4 h-4" />
+          </button>
+        )}
+
+        <div className="flex-1 min-w-0">
+          {editing ? (
+            <div className="flex gap-1">
+              <input
+                autoFocus
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") saveEdit();
+                  if (e.key === "Escape") setEditing(false);
+                }}
+                className="flex-1 bg-night/60 border border-neon/30 rounded-lg px-2 py-1 text-sm outline-none focus:border-neon"
+              />
+              <button onClick={saveEdit} className="p-1 text-neon">
+                <CheckCircle2 className="w-4 h-4" />
+              </button>
+              <button onClick={() => setEditing(false)} className="p-1 text-sky-400/60">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <p
+              className={`text-sm leading-snug ${
+                task.status === "done" ? "line-through text-sky-400/50" : "text-sky-100"
+              }`}
+            >
+              {task.title}
+            </p>
+          )}
+
+          <div className="flex items-center gap-2 mt-2">
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${priorityClass}`}>
+              {PRIORITY_LABELS[task.priority]}
+            </span>
+          </div>
+        </div>
+
+        {!isOverlay && !editing && (
+          <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={() => setEditing(true)}
+              className="p-1 rounded hover:bg-neon/10 text-sky-400/60 hover:text-neon"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => onDelete?.(task.id)}
+              className="p-1 rounded hover:bg-rose-500/10 text-sky-400/60 hover:text-rose-400"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Column({
+  status,
+  tasks,
+  onDelete,
+  onUpdate,
+}: {
+  status: TaskStatus;
+  tasks: Task[];
+  onDelete: (id: string) => void;
+  onUpdate: (id: string, updates: Partial<Task>) => void;
+}) {
+  const columnTasks = tasks.filter((t) => t.status === status);
+
+  return (
+    <div className="flex flex-col min-h-[320px] glass rounded-2xl overflow-hidden">
+      <div className="px-4 py-3 border-b border-neon/10 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-sky-100 flex items-center gap-2">
+          {status === "todo" && <Circle className="w-3.5 h-3.5 text-sky-400" />}
+          {status === "in_progress" && (
+            <div className="w-3.5 h-3.5 rounded-full border-2 border-neon border-t-transparent animate-spin" />
+          )}
+          {status === "done" && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
+          {STATUS_LABELS[status]}
+        </h3>
+        <span className="text-xs text-sky-400/50 bg-night/50 px-2 py-0.5 rounded-full">
+          {columnTasks.length}
+        </span>
+      </div>
+
+      <SortableContext items={columnTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+        <div className="flex-1 p-3 space-y-2 overflow-y-auto max-h-[480px]">
+          {columnTasks.map((task) => (
+            <TaskCard key={task.id} task={task} onDelete={onDelete} onUpdate={onUpdate} />
+          ))}
+          {columnTasks.length === 0 && (
+            <div className="text-center py-8 text-sky-400/30 text-xs">
+              Görev yok
+            </div>
+          )}
+        </div>
+      </SortableContext>
+    </div>
+  );
+}
+
+export default function KanbanBoard({
+  tasks,
+  onAdd,
+  onUpdate,
+  onDelete,
+  onMove,
+}: Props) {
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [title, setTitle] = useState("");
+  const [priority, setPriority] = useState<Priority>("medium");
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
+  );
+
+  const activeTask = activeId ? tasks.find((t) => t.id === activeId) : null;
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+    if (!over) return;
+
+    const taskId = active.id as string;
+    const overId = over.id as string;
+
+    // Dropped on a column?
+    if (COLUMNS.includes(overId as TaskStatus)) {
+      onMove(taskId, overId as TaskStatus);
+      return;
+    }
+
+    // Dropped on another task — move to that task's column
+    const overTask = tasks.find((t) => t.id === overId);
+    if (overTask) {
+      onMove(taskId, overTask.status);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim()) return;
+    onAdd(title.trim(), priority);
+    setTitle("");
+    setPriority("medium");
+    setShowForm(false);
+  };
+
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-sky-100">Görev Panosu</h2>
+        <button
+          onClick={() => setShowForm((v) => !v)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neon/10 border border-neon/30 text-neon text-sm font-medium hover:bg-neon/20 hover:shadow-neon-sm transition-all"
+        >
+          <Plus className="w-4 h-4" />
+          Yeni Görev
+        </button>
+      </div>
+
+      {showForm && (
+        <form
+          onSubmit={handleSubmit}
+          className="glass rounded-2xl p-4 flex flex-col sm:flex-row gap-3 animate-in fade-in"
+        >
+          <input
+            autoFocus
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Görev başlığı..."
+            className="flex-1 bg-night/50 border border-neon/20 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-neon placeholder:text-sky-400/40"
+          />
+          <select
+            value={priority}
+            onChange={(e) => setPriority(e.target.value as Priority)}
+            className="bg-night/50 border border-neon/20 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-neon"
+          >
+            <option value="low">Düşük</option>
+            <option value="medium">Orta</option>
+            <option value="high">Yüksek</option>
+          </select>
+          <button
+            type="submit"
+            className="px-5 py-2.5 rounded-xl bg-neon text-night font-semibold text-sm hover:bg-neon-dim transition-colors"
+          >
+            Ekle
+          </button>
+        </form>
+      )}
+
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {COLUMNS.map((status) => (
+            <div key={status} id={status}>
+              <Column
+                status={status}
+                tasks={tasks}
+                onDelete={onDelete}
+                onUpdate={onUpdate}
+              />
+            </div>
+          ))}
+        </div>
+
+        <DragOverlay>
+          {activeTask ? <TaskCard task={activeTask} isOverlay /> : null}
+        </DragOverlay>
+      </DndContext>
+    </section>
+  );
+}
