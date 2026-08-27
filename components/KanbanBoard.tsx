@@ -10,6 +10,7 @@ import {
   useSensors,
   DragStartEvent,
   DragEndEvent,
+  useDroppable,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -42,11 +43,13 @@ function TaskCard({
   task,
   onDelete,
   onUpdate,
+  onMove,
   isOverlay = false,
 }: {
   task: Task;
   onDelete?: (id: string) => void;
   onUpdate?: (id: string, updates: Partial<Task>) => void;
+  onMove?: (id: string, status: TaskStatus) => void;
   isOverlay?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
@@ -59,7 +62,7 @@ function TaskCard({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: task.id, data: { status: task.status } });
+  } = useSortable({ id: task.id, data: { type: "task", status: task.status } });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -81,6 +84,11 @@ function TaskCard({
     setEditing(false);
   };
 
+  const toggleDone = () => {
+    if (!onMove) return;
+    onMove(task.id, task.status === "done" ? "todo" : "done");
+  };
+
   return (
     <div
       ref={isOverlay ? undefined : setNodeRef}
@@ -95,8 +103,24 @@ function TaskCard({
             {...attributes}
             {...listeners}
             className="mt-0.5 p-1 rounded text-sky-400/40 hover:text-neon cursor-grab active:cursor-grabbing touch-none"
+            aria-label="Sürükle"
           >
             <GripVertical className="w-4 h-4" />
+          </button>
+        )}
+
+        {!isOverlay && (
+          <button
+            onClick={toggleDone}
+            className="mt-0.5 p-1 rounded text-sky-400/50 hover:text-emerald-400 transition-colors"
+            title={task.status === "done" ? "Geri al" : "Tamamla"}
+            aria-label={task.status === "done" ? "Geri al" : "Tamamla"}
+          >
+            {task.status === "done" ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            ) : (
+              <Circle className="w-4 h-4" />
+            )}
           </button>
         )}
 
@@ -163,16 +187,27 @@ function Column({
   tasks,
   onDelete,
   onUpdate,
+  onMove,
 }: {
   status: TaskStatus;
   tasks: Task[];
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Task>) => void;
+  onMove: (id: string, status: TaskStatus) => void;
 }) {
   const columnTasks = tasks.filter((t) => t.status === status);
+  const { setNodeRef, isOver } = useDroppable({
+    id: status,
+    data: { type: "column", status },
+  });
 
   return (
-    <div className="flex flex-col min-h-[320px] glass rounded-2xl overflow-hidden">
+    <div
+      ref={setNodeRef}
+      className={`flex flex-col min-h-[320px] glass rounded-2xl overflow-hidden transition-all ${
+        isOver ? "border-neon/40 shadow-neon-sm" : ""
+      }`}
+    >
       <div className="px-4 py-3 border-b border-neon/10 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-sky-100 flex items-center gap-2">
           {status === "todo" && <Circle className="w-3.5 h-3.5 text-sky-400" />}
@@ -190,11 +225,17 @@ function Column({
       <SortableContext items={columnTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
         <div className="flex-1 p-3 space-y-2 overflow-y-auto max-h-[480px]">
           {columnTasks.map((task) => (
-            <TaskCard key={task.id} task={task} onDelete={onDelete} onUpdate={onUpdate} />
+            <TaskCard
+              key={task.id}
+              task={task}
+              onDelete={onDelete}
+              onUpdate={onUpdate}
+              onMove={onMove}
+            />
           ))}
           {columnTasks.length === 0 && (
             <div className="text-center py-8 text-sky-400/30 text-xs">
-              Görev yok
+              Görev yok — buraya sürükle
             </div>
           )}
         </div>
@@ -231,15 +272,13 @@ export default function KanbanBoard({
     if (!over) return;
 
     const taskId = active.id as string;
-    const overId = over.id as string;
+    const overId = String(over.id);
 
-    // Dropped on a column?
     if (COLUMNS.includes(overId as TaskStatus)) {
       onMove(taskId, overId as TaskStatus);
       return;
     }
 
-    // Dropped on another task — move to that task's column
     const overTask = tasks.find((t) => t.id === overId);
     if (overTask) {
       onMove(taskId, overTask.status);
@@ -271,7 +310,7 @@ export default function KanbanBoard({
       {showForm && (
         <form
           onSubmit={handleSubmit}
-          className="glass rounded-2xl p-4 flex flex-col sm:flex-row gap-3 animate-in fade-in"
+          className="glass rounded-2xl p-4 flex flex-col sm:flex-row gap-3"
         >
           <input
             autoFocus
@@ -306,14 +345,14 @@ export default function KanbanBoard({
       >
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {COLUMNS.map((status) => (
-            <div key={status} id={status}>
-              <Column
-                status={status}
-                tasks={tasks}
-                onDelete={onDelete}
-                onUpdate={onUpdate}
-              />
-            </div>
+            <Column
+              key={status}
+              status={status}
+              tasks={tasks}
+              onDelete={onDelete}
+              onUpdate={onUpdate}
+              onMove={onMove}
+            />
           ))}
         </div>
 
