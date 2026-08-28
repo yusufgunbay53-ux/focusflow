@@ -2,6 +2,8 @@
 
 Modern, karanlık tema odaklı, glassmorphism tasarımlı bir productivity web uygulaması.
 
+**Repo:** https://github.com/yusufgunbay53-ux/focusflow
+
 ![FocusFlow](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)
 ![Tailwind](https://img.shields.io/badge/Tailwind-3.4-38bdf8?style=flat-square&logo=tailwindcss)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178c6?style=flat-square&logo=typescript)
@@ -9,9 +11,9 @@ Modern, karanlık tema odaklı, glassmorphism tasarımlı bir productivity web u
 ## 🎯 Özellikler
 
 ### Akıllı Görev Yönetimi (Kanban)
-- Sürükle-bırak (Drag & Drop) destekli 3 sütunlu board
+- Sürükle-bırak (Drag & Drop) destekli 3 sütunlu board (Yapılacaklar / Yapılıyor / Tamamlandı)
 - Öncelik etiketleri: Düşük / Orta / Yüksek
-- Görev ekleme, düzenleme, silme
+- Görev ekleme, düzenleme, silme ve check ile tamamlama
 - localStorage ile kalıcı saklama
 
 ### Gelişmiş Pomodoro Sayacı
@@ -22,7 +24,7 @@ Modern, karanlık tema odaklı, glassmorphism tasarımlı bir productivity web u
 
 ### AI Performans Koçu
 - Görev tamamlanma oranı ve Pomodoro verilerine göre akıllı geri bildirim
-- Mock AI yapısı — ileride gerçek API'ye kolayca bağlanabilir
+- Mock AI yapısı — ileride gerçek API'ye kolayca bağlanabilir (`lib/ai-coach.ts`)
 
 ### Ambient Ses Çalar
 - Yağmur sesi (Web Audio brown noise)
@@ -33,13 +35,13 @@ Modern, karanlık tema odaklı, glassmorphism tasarımlı bir productivity web u
 - Tamamen Dark Mode
 - Neon mavi (`#00d2ff`) + derin gece mavisi (`#0b111e`)
 - Glassmorphism kartlar
-- Mobil uyumlu (PWA-ready)
+- Mobil uyumlu (PWA-ready `public/manifest.json`)
 
 ## 🚀 Kurulum
 
 ```bash
-git clone https://github.com/yusufgunbay53-ux/FocusFlow.git
-cd FocusFlow
+git clone https://github.com/yusufgunbay53-ux/focusflow.git
+cd focusflow
 npm install
 npm run dev
 ```
@@ -54,13 +56,13 @@ Tarayıcıda [http://localhost:3000](http://localhost:3000) adresini aç.
 | UI | React 19 + Tailwind CSS |
 | İkonlar | Lucide React |
 | Drag & Drop | @dnd-kit |
-| State | localStorage (modüler) |
+| State | localStorage (modüler `lib/storage.ts`) |
 | Ses | Web Audio API |
 
 ## 📁 Proje Yapısı
 
 ```
-FocusFlow/
+focusflow/
 ├── app/
 │   ├── globals.css
 │   ├── layout.tsx
@@ -73,7 +75,8 @@ FocusFlow/
 │   └── AmbientPlayer.tsx
 ├── lib/
 │   ├── types.ts
-│   └── storage.ts
+│   ├── storage.ts
+│   └── ai-coach.ts
 ├── public/
 │   └── manifest.json
 └── package.json
@@ -81,7 +84,7 @@ FocusFlow/
 
 ## 🔄 Gelecek İyileştirmeler
 
-- Supabase / Firebase entegrasyonu (veri modelleri hazır)
+- Supabase / Firebase entegrasyonu (JSON modelleri `lib/types.ts` içinde hazır)
 - Gerçek AI API bağlantısı (OpenAI / Grok)
 - Kullanıcı hesapları
 - Haftalık istatistik grafikleri
