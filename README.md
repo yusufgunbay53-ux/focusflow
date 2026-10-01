@@ -1,14 +1,14 @@
 # FocusFlow — AI Destekli Görev & Odaklanma Asistanı
 
-Modern, karanlık tema odaklı, glassmorphism tasarımlı bir productivity web uygulaması.
+Modern, karanlık tema odaklı, glassmorphism tasarımlı productivity web uygulaması.
 
-**Repo:** https://github.com/yusufgunbay53-ux/focusflow
+**Canlı repo:** https://github.com/yusufgunbay53-ux/focusflow
 
 ![FocusFlow](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)
 ![Tailwind](https://img.shields.io/badge/Tailwind-3.4-38bdf8?style=flat-square&logo=tailwindcss)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178c6?style=flat-square&logo=typescript)
 
-## 🎯 Özellikler
+## Özellikler
 
 ### Akıllı Görev Yönetimi (Kanban)
 - Sürükle-bırak (Drag & Drop) destekli 3 sütunlu board (Yapılacaklar / Yapılıyor / Tamamlandı)
@@ -37,7 +37,7 @@ Modern, karanlık tema odaklı, glassmorphism tasarımlı bir productivity web u
 - Glassmorphism kartlar
 - Mobil uyumlu (PWA-ready `public/manifest.json`)
 
-## 🚀 Kurulum
+## Kurulum
 
 ```bash
 git clone https://github.com/yusufgunbay53-ux/focusflow.git
@@ -48,7 +48,7 @@ npm run dev
 
 Tarayıcıda [http://localhost:3000](http://localhost:3000) adresini aç.
 
-## 📦 Teknoloji Yığını
+## Teknoloji Yığını
 
 | Katman | Teknoloji |
 |--------|-----------|
@@ -59,7 +59,7 @@ Tarayıcıda [http://localhost:3000](http://localhost:3000) adresini aç.
 | State | localStorage (modüler `lib/storage.ts`) |
 | Ses | Web Audio API |
 
-## 📁 Proje Yapısı
+## Proje Yapısı
 
 ```
 focusflow/
@@ -82,7 +82,7 @@ focusflow/
 └── package.json
 ```
 
-## 🔄 Gelecek İyileştirmeler
+## Gelecek İyileştirmeler
 
 - Supabase / Firebase entegrasyonu (JSON modelleri `lib/types.ts` içinde hazır)
 - Gerçek AI API bağlantısı (OpenAI / Grok)
@@ -91,4 +91,4 @@ focusflow/
 
 ---
 
-Made with ❤️ for deep focus.
+Made with focus.
