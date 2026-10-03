@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   description:
     "Modern dark mode productivity app with Kanban board, Pomodoro timer and AI performance coach.",
   manifest: "/manifest.json",
+  icons: { icon: "/icon.svg", apple: "/icon.svg" },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
