@@ -15,38 +15,47 @@ export default function PomodoroTimer({ onComplete }: Props) {
   const [secondsLeft, setSecondsLeft] = useState(WORK_SECONDS);
   const [isRunning, setIsRunning] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const total = mode === "work" ? WORK_SECONDS : BREAK_SECONDS;
   const progress = 1 - secondsLeft / total;
 
-  // Notification + sound
   const notify = useCallback(() => {
-    // Browser notification
     if ("Notification" in window && Notification.permission === "granted") {
-      new Notification(mode === "work" ? "Pomodoro bitti! 🌟" : "Mola bitti! 💪", {
+      new Notification(mode === "work" ? "Pomodoro bitti!" : "Mola bitti!", {
         body:
           mode === "work"
             ? "Harika iş! 5 dakikalık mola zamanı."
             : "Mola bitti, odaklanmaya devam edelim.",
-        icon: "/icon-192.png",
+        icon: "/icon.svg",
       });
     }
 
-    // Soft beep using Web Audio API
     try {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const ctx = new AudioCtx();
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
       gain.connect(ctx.destination);
-      osc.frequency.value = 660;
+      osc.frequency.value = mode === "work" ? 523.25 : 659.25;
       osc.type = "sine";
-      gain.gain.setValueAtTime(0.15, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.9);
       osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.8);
-    } catch {}
+      osc.stop(ctx.currentTime + 0.9);
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.frequency.value = mode === "work" ? 784 : 523.25;
+      osc2.type = "sine";
+      gain2.gain.setValueAtTime(0.08, ctx.currentTime + 0.18);
+      gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.1);
+      osc2.start(ctx.currentTime + 0.18);
+      osc2.stop(ctx.currentTime + 1.1);
+    } catch {
+      /* ses engellenirse sessiz geç */
+    }
   }, [mode]);
 
   useEffect(() => {
@@ -64,17 +73,16 @@ export default function PomodoroTimer({ onComplete }: Props) {
     intervalRef.current = setInterval(() => {
       setSecondsLeft((prev) => {
         if (prev <= 1) {
-          clearInterval(intervalRef.current!);
+          if (intervalRef.current) clearInterval(intervalRef.current);
           setIsRunning(false);
           notify();
           if (mode === "work") {
             onComplete();
             setMode("break");
             return BREAK_SECONDS;
-          } else {
-            setMode("work");
-            return WORK_SECONDS;
           }
+          setMode("work");
+          return WORK_SECONDS;
         }
         return prev - 1;
       });
@@ -98,12 +106,8 @@ export default function PomodoroTimer({ onComplete }: Props) {
     setSecondsLeft(m === "work" ? WORK_SECONDS : BREAK_SECONDS);
   };
 
-  const mins = Math.floor(secondsLeft / 60)
-    .toString()
-    .padStart(2, "0");
+  const mins = Math.floor(secondsLeft / 60).toString().padStart(2, "0");
   const secs = (secondsLeft % 60).toString().padStart(2, "0");
-
-  // SVG ring
   const radius = 54;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference * (1 - progress);
@@ -120,7 +124,7 @@ export default function PomodoroTimer({ onComplete }: Props) {
           }`}
         >
           <Brain className="w-3.5 h-3.5" />
-          Çalışma
+          Çalışma 25 dk
         </button>
         <button
           onClick={() => switchMode("break")}
@@ -131,21 +135,13 @@ export default function PomodoroTimer({ onComplete }: Props) {
           }`}
         >
           <Coffee className="w-3.5 h-3.5" />
-          Mola
+          Mola 5 dk
         </button>
       </div>
 
-      {/* Ring */}
       <div className="relative w-40 h-40">
         <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
-          <circle
-            cx="60"
-            cy="60"
-            r={radius}
-            fill="none"
-            stroke="rgba(0,210,255,0.08)"
-            strokeWidth="6"
-          />
+          <circle cx="60" cy="60" r={radius} fill="none" stroke="rgba(0,210,255,0.08)" strokeWidth="6" />
           <circle
             cx="60"
             cy="60"
@@ -157,9 +153,7 @@ export default function PomodoroTimer({ onComplete }: Props) {
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
             className="timer-ring"
-            style={{
-              filter: `drop-shadow(0 0 6px ${mode === "work" ? "#00d2ff" : "#34d399"})`,
-            }}
+            style={{ filter: `drop-shadow(0 0 6px ${mode === "work" ? "#00d2ff" : "#34d399"})` }}
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -172,7 +166,6 @@ export default function PomodoroTimer({ onComplete }: Props) {
         </div>
       </div>
 
-      {/* Controls */}
       <div className="flex items-center gap-3">
         <button
           onClick={reset}
@@ -187,7 +180,7 @@ export default function PomodoroTimer({ onComplete }: Props) {
         >
           {isRunning ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
         </button>
-        <div className="w-10" /> {/* spacer for symmetry */}
+        <div className="w-10" />
       </div>
     </div>
   );
