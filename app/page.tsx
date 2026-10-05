@@ -41,13 +41,11 @@ export default function Home() {
       status: "todo",
       createdAt: new Date().toISOString(),
     };
-    setTasks((prev) => [...prev, newTask]);
+    setTasks((prev) => [newTask, ...prev]);
   };
 
   const updateTask = (id: string, updates: Partial<Task>) => {
-    setTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, ...updates } : t))
-    );
+    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)));
   };
 
   const deleteTask = (id: string) => {
@@ -56,23 +54,26 @@ export default function Home() {
 
   const moveTask = (id: string, status: TaskStatus) => {
     setTasks((prev) => {
-      const updated = prev.map((t) =>
+      const current = prev.find((t) => t.id === id);
+      if (current && current.status !== status) {
+        if (status === "done") {
+          setStats((s) => ({ ...s, todayCompletedTasks: s.todayCompletedTasks + 1 }));
+        } else if (current.status === "done") {
+          setStats((s) => ({
+            ...s,
+            todayCompletedTasks: Math.max(0, s.todayCompletedTasks - 1),
+          }));
+        }
+      }
+      return prev.map((t) =>
         t.id === id
           ? {
               ...t,
               status,
-              completedAt:
-                status === "done" ? new Date().toISOString() : undefined,
+              completedAt: status === "done" ? new Date().toISOString() : undefined,
             }
           : t
       );
-      if (status === "done") {
-        setStats((s) => ({
-          ...s,
-          todayCompletedTasks: s.todayCompletedTasks + 1,
-        }));
-      }
-      return updated;
     });
   };
 
@@ -93,11 +94,9 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen pb-24">
+    <div className="min-h-screen pb-28">
       <Header />
-
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        {/* Top row: Timer + AI Coach */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1">
             <PomodoroTimer onComplete={onPomodoroComplete} />
@@ -106,8 +105,6 @@ export default function Home() {
             <AICoach tasks={tasks} stats={stats} />
           </div>
         </div>
-
-        {/* Kanban */}
         <KanbanBoard
           tasks={tasks}
           onAdd={addTask}
@@ -116,7 +113,6 @@ export default function Home() {
           onMove={moveTask}
         />
       </main>
-
       <AmbientPlayer />
     </div>
   );

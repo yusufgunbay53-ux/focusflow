@@ -6,6 +6,7 @@ import {
   DragOverlay,
   closestCorners,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragStartEvent,
@@ -38,6 +39,12 @@ interface Props {
 }
 
 const COLUMNS: TaskStatus[] = ["todo", "in_progress", "done"];
+const PRIORITIES: Priority[] = ["low", "medium", "high"];
+
+function nextPriority(current: Priority): Priority {
+  const index = PRIORITIES.indexOf(current);
+  return PRIORITIES[(index + 1) % PRIORITIES.length];
+}
 
 function TaskCard({
   task,
@@ -55,14 +62,10 @@ function TaskCard({
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(task.title);
 
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: task.id, data: { type: "task", status: task.status } });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: task.id,
+    data: { type: "task", status: task.status },
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -78,9 +81,7 @@ function TaskCard({
       : "priority-low";
 
   const saveEdit = () => {
-    if (editTitle.trim() && onUpdate) {
-      onUpdate(task.id, { title: editTitle.trim() });
-    }
+    if (editTitle.trim() && onUpdate) onUpdate(task.id, { title: editTitle.trim() });
     setEditing(false);
   };
 
@@ -93,7 +94,7 @@ function TaskCard({
     <div
       ref={isOverlay ? undefined : setNodeRef}
       style={isOverlay ? undefined : style}
-      className={`glass rounded-xl p-3 group transition-all duration-200 hover:border-neon/30 ${
+      className={`glass rounded-xl p-3 group transition-all duration-200 hover:border-neon/30 hover:-translate-y-0.5 ${
         isOverlay ? "shadow-neon scale-105 rotate-1" : ""
       }`}
     >
@@ -137,41 +138,49 @@ function TaskCard({
                 }}
                 className="flex-1 bg-night/60 border border-neon/30 rounded-lg px-2 py-1 text-sm outline-none focus:border-neon"
               />
-              <button onClick={saveEdit} className="p-1 text-neon">
+              <button onClick={saveEdit} className="p-1 text-neon" aria-label="Kaydet">
                 <CheckCircle2 className="w-4 h-4" />
               </button>
-              <button onClick={() => setEditing(false)} className="p-1 text-sky-400/60">
+              <button onClick={() => setEditing(false)} className="p-1 text-sky-400/60" aria-label="İptal">
                 <X className="w-4 h-4" />
               </button>
             </div>
           ) : (
-            <p
-              className={`text-sm leading-snug ${
-                task.status === "done" ? "line-through text-sky-400/50" : "text-sky-100"
-              }`}
-            >
+            <p className={`text-sm leading-snug ${
+              task.status === "done" ? "line-through text-sky-400/50" : "text-sky-100"
+            }`}>
               {task.title}
             </p>
           )}
 
           <div className="flex items-center gap-2 mt-2">
-            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${priorityClass}`}>
+            <button
+              type="button"
+              onClick={() => onUpdate?.(task.id, { priority: nextPriority(task.priority) })}
+              className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${priorityClass}`}
+              title="Önceliği değiştir"
+            >
               {PRIORITY_LABELS[task.priority]}
-            </span>
+            </button>
           </div>
         </div>
 
         {!isOverlay && !editing && (
-          <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex flex-col gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
             <button
-              onClick={() => setEditing(true)}
+              onClick={() => {
+                setEditTitle(task.title);
+                setEditing(true);
+              }}
               className="p-1 rounded hover:bg-neon/10 text-sky-400/60 hover:text-neon"
+              aria-label="Düzenle"
             >
               <Pencil className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => onDelete?.(task.id)}
               className="p-1 rounded hover:bg-rose-500/10 text-sky-400/60 hover:text-rose-400"
+              aria-label="Sil"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
@@ -204,7 +213,7 @@ function Column({
   return (
     <div
       ref={setNodeRef}
-      className={`flex flex-col min-h-[320px] glass rounded-2xl overflow-hidden transition-all ${
+      className={`flex flex-col min-h-[280px] glass rounded-2xl overflow-hidden transition-all ${
         isOver ? "border-neon/40 shadow-neon-sm" : ""
       }`}
     >
@@ -223,7 +232,7 @@ function Column({
       </div>
 
       <SortableContext items={columnTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-        <div className="flex-1 p-3 space-y-2 overflow-y-auto max-h-[480px]">
+        <div className="flex-1 p-3 space-y-2 overflow-y-auto max-h-[520px]">
           {columnTasks.map((task) => (
             <TaskCard
               key={task.id}
@@ -234,9 +243,7 @@ function Column({
             />
           ))}
           {columnTasks.length === 0 && (
-            <div className="text-center py-8 text-sky-400/30 text-xs">
-              Görev yok — buraya sürükle
-            </div>
+            <div className="text-center py-8 text-sky-400/30 text-xs">Görev yok — buraya sürükle</div>
           )}
         </div>
       </SortableContext>
@@ -244,20 +251,15 @@ function Column({
   );
 }
 
-export default function KanbanBoard({
-  tasks,
-  onAdd,
-  onUpdate,
-  onDelete,
-  onMove,
-}: Props) {
+export default function KanbanBoard({ tasks, onAdd, onUpdate, onDelete, onMove }: Props) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
   const [priority, setPriority] = useState<Priority>("medium");
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } })
   );
 
   const activeTask = activeId ? tasks.find((t) => t.id === activeId) : null;
@@ -280,9 +282,7 @@ export default function KanbanBoard({
     }
 
     const overTask = tasks.find((t) => t.id === overId);
-    if (overTask) {
-      onMove(taskId, overTask.status);
-    }
+    if (overTask) onMove(taskId, overTask.status);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -296,7 +296,7 @@ export default function KanbanBoard({
 
   return (
     <section className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <h2 className="text-lg font-semibold text-sky-100">Görev Panosu</h2>
         <button
           onClick={() => setShowForm((v) => !v)}
@@ -308,10 +308,7 @@ export default function KanbanBoard({
       </div>
 
       {showForm && (
-        <form
-          onSubmit={handleSubmit}
-          className="glass rounded-2xl p-4 flex flex-col sm:flex-row gap-3"
-        >
+        <form onSubmit={handleSubmit} className="glass rounded-2xl p-4 flex flex-col sm:flex-row gap-3">
           <input
             autoFocus
             value={title}
@@ -355,10 +352,7 @@ export default function KanbanBoard({
             />
           ))}
         </div>
-
-        <DragOverlay>
-          {activeTask ? <TaskCard task={activeTask} isOverlay /> : null}
-        </DragOverlay>
+        <DragOverlay>{activeTask ? <TaskCard task={activeTask} isOverlay /> : null}</DragOverlay>
       </DndContext>
     </section>
   );
