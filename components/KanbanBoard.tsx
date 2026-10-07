@@ -32,7 +32,7 @@ import { Task, TaskStatus, Priority, PRIORITY_LABELS, STATUS_LABELS } from "@/li
 
 interface Props {
   tasks: Task[];
-  onAdd: (title: string, priority: Priority) => void;
+  onAdd: (title: string, priority: Priority, description?: string) => void;
   onUpdate: (id: string, updates: Partial<Task>) => void;
   onDelete: (id: string) => void;
   onMove: (id: string, status: TaskStatus) => void;
@@ -61,6 +61,7 @@ function TaskCard({
 }) {
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(task.title);
+  const [editDescription, setEditDescription] = useState(task.description ?? "");
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
@@ -81,7 +82,12 @@ function TaskCard({
       : "priority-low";
 
   const saveEdit = () => {
-    if (editTitle.trim() && onUpdate) onUpdate(task.id, { title: editTitle.trim() });
+    if (editTitle.trim() && onUpdate) {
+      onUpdate(task.id, {
+        title: editTitle.trim(),
+        description: editDescription.trim() || undefined,
+      });
+    }
     setEditing(false);
   };
 
@@ -127,7 +133,7 @@ function TaskCard({
 
         <div className="flex-1 min-w-0">
           {editing ? (
-            <div className="flex gap-1">
+            <div className="space-y-2">
               <input
                 autoFocus
                 value={editTitle}
@@ -136,21 +142,35 @@ function TaskCard({
                   if (e.key === "Enter") saveEdit();
                   if (e.key === "Escape") setEditing(false);
                 }}
-                className="flex-1 bg-night/60 border border-neon/30 rounded-lg px-2 py-1 text-sm outline-none focus:border-neon"
+                className="w-full bg-night/60 border border-neon/30 rounded-lg px-2 py-1 text-sm outline-none focus:border-neon"
               />
-              <button onClick={saveEdit} className="p-1 text-neon" aria-label="Kaydet">
-                <CheckCircle2 className="w-4 h-4" />
-              </button>
-              <button onClick={() => setEditing(false)} className="p-1 text-sky-400/60" aria-label="İptal">
-                <X className="w-4 h-4" />
-              </button>
+              <textarea
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                rows={2}
+                placeholder="Kısa açıklama"
+                className="w-full bg-night/60 border border-neon/20 rounded-lg px-2 py-1 text-xs outline-none focus:border-neon resize-none"
+              />
+              <div className="flex gap-1">
+                <button onClick={saveEdit} className="p-1 text-neon" aria-label="Kaydet">
+                  <CheckCircle2 className="w-4 h-4" />
+                </button>
+                <button onClick={() => setEditing(false)} className="p-1 text-sky-400/60" aria-label="İptal">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           ) : (
-            <p className={`text-sm leading-snug ${
-              task.status === "done" ? "line-through text-sky-400/50" : "text-sky-100"
-            }`}>
-              {task.title}
-            </p>
+            <>
+              <p className={`text-sm leading-snug ${
+                task.status === "done" ? "line-through text-sky-400/50" : "text-sky-100"
+              }`}>
+                {task.title}
+              </p>
+              {task.description && (
+                <p className="text-[11px] text-sky-400/60 mt-1 line-clamp-2">{task.description}</p>
+              )}
+            </>
           )}
 
           <div className="flex items-center gap-2 mt-2">
@@ -170,6 +190,7 @@ function TaskCard({
             <button
               onClick={() => {
                 setEditTitle(task.title);
+                setEditDescription(task.description ?? "");
                 setEditing(true);
               }}
               className="p-1 rounded hover:bg-neon/10 text-sky-400/60 hover:text-neon"
@@ -255,6 +276,7 @@ export default function KanbanBoard({ tasks, onAdd, onUpdate, onDelete, onMove }
   const [activeId, setActiveId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<Priority>("medium");
 
   const sensors = useSensors(
@@ -288,8 +310,9 @@ export default function KanbanBoard({ tasks, onAdd, onUpdate, onDelete, onMove }
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
-    onAdd(title.trim(), priority);
+    onAdd(title.trim(), priority, description.trim() || undefined);
     setTitle("");
+    setDescription("");
     setPriority("medium");
     setShowForm(false);
   };
@@ -308,29 +331,37 @@ export default function KanbanBoard({ tasks, onAdd, onUpdate, onDelete, onMove }
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="glass rounded-2xl p-4 flex flex-col sm:flex-row gap-3">
+        <form onSubmit={handleSubmit} className="glass rounded-2xl p-4 flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <input
+              autoFocus
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Görev başlığı..."
+              className="flex-1 bg-night/50 border border-neon/20 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-neon placeholder:text-sky-400/40"
+            />
+            <select
+              value={priority}
+              onChange={(e) => setPriority(e.target.value as Priority)}
+              className="bg-night/50 border border-neon/20 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-neon"
+            >
+              <option value="low">Düşük</option>
+              <option value="medium">Orta</option>
+              <option value="high">Yüksek</option>
+            </select>
+            <button
+              type="submit"
+              className="px-5 py-2.5 rounded-xl bg-neon text-night font-semibold text-sm hover:bg-neon-dim transition-colors"
+            >
+              Ekle
+            </button>
+          </div>
           <input
-            autoFocus
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Görev başlığı..."
-            className="flex-1 bg-night/50 border border-neon/20 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-neon placeholder:text-sky-400/40"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="İsteğe bağlı açıklama"
+            className="bg-night/50 border border-neon/20 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-neon placeholder:text-sky-400/40"
           />
-          <select
-            value={priority}
-            onChange={(e) => setPriority(e.target.value as Priority)}
-            className="bg-night/50 border border-neon/20 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-neon"
-          >
-            <option value="low">Düşük</option>
-            <option value="medium">Orta</option>
-            <option value="high">Yüksek</option>
-          </select>
-          <button
-            type="submit"
-            className="px-5 py-2.5 rounded-xl bg-neon text-night font-semibold text-sm hover:bg-neon-dim transition-colors"
-          >
-            Ekle
-          </button>
         </form>
       )}
 
