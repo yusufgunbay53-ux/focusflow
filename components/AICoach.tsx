@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import { Bot, Zap, Target, TrendingUp, Coffee } from "lucide-react";
 import { Task, PomodoroStats } from "@/lib/types";
 import { generateInsights, CoachInsight } from "@/lib/ai-coach";
@@ -29,7 +29,31 @@ function iconFor(insight: CoachInsight) {
 }
 
 export default function AICoach({ tasks, stats }: Props) {
-  const insights = useMemo(() => generateInsights(tasks, stats), [tasks, stats]);
+  const [insights, setInsights] = useState<CoachInsight[]>(() => generateInsights(tasks, stats));
+  const [source, setSource] = useState("yerel");
+
+  useEffect(() => {
+    const local = generateInsights(tasks, stats);
+    setInsights(local);
+    const controller = new AbortController();
+
+    fetch("/api/coach", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tasks, stats }),
+      signal: controller.signal,
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data?.insights) && data.insights.length) {
+          setInsights(data.insights);
+          setSource(data.provider ?? "api");
+        }
+      })
+      .catch(() => setSource("yerel"));
+
+    return () => controller.abort();
+  }, [tasks, stats]);
 
   const toneStyles = {
     positive: "border-emerald-500/20 bg-emerald-500/5",
@@ -49,9 +73,9 @@ export default function AICoach({ tasks, stats }: Props) {
         <div className="w-8 h-8 rounded-lg bg-neon/10 border border-neon/25 flex items-center justify-center">
           <Bot className="w-4 h-4 text-neon" />
         </div>
-        <div>
+        <div className="flex-1">
           <h2 className="text-sm font-semibold text-sky-100">AI Performans Koçu</h2>
-          <p className="text-[10px] text-sky-400/50">Görev & Pomodoro analizine göre öneriler</p>
+          <p className="text-[10px] text-sky-400/50">Kaynak: {source} · görev ve Pomodoro analizi</p>
         </div>
       </div>
 

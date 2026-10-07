@@ -33,19 +33,24 @@ export default function Home() {
     if (mounted) saveStats(stats);
   }, [stats, mounted]);
 
-  const addTask = (title: string, priority: Priority) => {
+  const addTask = (title: string, priority: Priority, description?: string) => {
+    const now = new Date().toISOString();
     const newTask: Task = {
       id: crypto.randomUUID(),
       title,
+      description: description?.trim() || undefined,
       priority,
       status: "todo",
-      createdAt: new Date().toISOString(),
+      createdAt: now,
+      updatedAt: now,
     };
     setTasks((prev) => [newTask, ...prev]);
   };
 
   const updateTask = (id: string, updates: Partial<Task>) => {
-    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)));
+    setTasks((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, ...updates, updatedAt: new Date().toISOString() } : t))
+    );
   };
 
   const deleteTask = (id: string) => {
@@ -70,6 +75,7 @@ export default function Home() {
           ? {
               ...t,
               status,
+              updatedAt: new Date().toISOString(),
               completedAt: status === "done" ? new Date().toISOString() : undefined,
             }
           : t

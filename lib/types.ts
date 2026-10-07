@@ -4,9 +4,11 @@ export type TaskStatus = "todo" | "in_progress" | "done";
 export interface Task {
   id: string;
   title: string;
+  description?: string;
   priority: Priority;
   status: TaskStatus;
   createdAt: string;
+  updatedAt?: string;
   completedAt?: string;
 }
 
@@ -15,6 +17,13 @@ export interface PomodoroStats {
   totalFocusMinutes: number;
   todayCompletedTasks: number;
   lastUpdated: string; // YYYY-MM-DD
+}
+
+export interface FocusSession {
+  id: string;
+  mode: "work" | "break";
+  durationMinutes: number;
+  completedAt: string;
 }
 
 export const PRIORITY_LABELS: Record<Priority, string> = {
