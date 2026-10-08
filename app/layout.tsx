@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
 export const metadata: Metadata = {
   title: "FocusFlow — AI Destekli Görev & Odaklanma Asistanı",
@@ -28,7 +29,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="tr" className="dark">
-      <body className="antialiased overflow-x-hidden">{children}</body>
+      <body className="antialiased overflow-x-hidden">
+        <ServiceWorkerRegister />
+        {children}
+      </body>
     </html>
   );
 }
